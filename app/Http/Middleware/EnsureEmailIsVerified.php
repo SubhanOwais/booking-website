@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class EnsureEmailIsVerified
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (!$request->user()) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
+        if (!$request->user()->is_email_verified) {
+            return response()->json([
+                'message' => 'Please verify your email address',
+                'needs_verification' => true
+            ], 403);
+        }
+
+        return $next($request);
+    }
+}
