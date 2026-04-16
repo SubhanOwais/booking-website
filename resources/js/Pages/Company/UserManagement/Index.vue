@@ -1,5 +1,5 @@
 <template>
-    <CompanyLayout >
+    <CompanyLayout>
         <!-- Page Header -->
         <div class="">
             <div class="flex items-center justify-between">
@@ -22,28 +22,8 @@
             </div>
         </div>
 
-        <!-- Stats Bar -->
-        <div class="py-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-white rounded-xl border border-slate-200 px-4 py-3">
-                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Users</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1">{{ users.length }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 px-4 py-3">
-                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Active</p>
-                <p class="text-2xl font-bold text-green-600 mt-1">{{ users.filter(u => u.is_active).length }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 px-4 py-3">
-                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Employees</p>
-                <p class="text-2xl font-bold text-blue-600 mt-1">{{ users.filter(u => u.user_type === 'Employee').length }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 px-4 py-3">
-                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Partners</p>
-                <p class="text-2xl font-bold text-purple-600 mt-1">{{ users.filter(u => u.user_type === 'Partner').length }}</p>
-            </div>
-        </div>
-
         <!-- Table -->
-        <div class="pb-6">
+        <div class="py-6">
             <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <!-- Search & Filter Bar -->
                 <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
@@ -53,14 +33,8 @@
                             class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                     </div>
                     <div class="flex items-center gap-2">
-                        <select v-model="filterType"
-                            class="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-600">
-                            <option value="">All Types</option>
-                            <option value="Employee">Employee</option>
-                            <option value="Partner">Partner</option>
-                        </select>
                         <select v-model="filterStatus"
-                            class="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-600">
+                            class="text-sm pr-8 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-600">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -101,7 +75,6 @@
                                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">User</th>
                                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
                                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Roles</th>
-                                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</th>
                                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                                 <th class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
                             </tr>
@@ -112,10 +85,6 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <div class="relative flex-shrink-0">
-                                            <!-- <img v-if="user.profile_picture"
-                                                :src="APP_URL + '/storage/' + user.profile_picture"
-                                                class="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
-                                                :alt="user.name" /> -->
                                             <img v-if="user.profile_picture"
                                                 :src="'/storage/' + user.profile_picture"
                                                 class="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
@@ -155,21 +124,6 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold"
-                                        :class="{
-                                            'bg-purple-50 text-purple-700': user.user_type === 'Partner',
-                                            'bg-blue-50 text-blue-700': user.user_type === 'Employee',
-                                            'bg-slate-50 text-slate-600': !['Partner','Employee'].includes(user.user_type),
-                                        }">
-                                        <i class="bi mr-1" :class="{
-                                            'bi-briefcase': user.user_type === 'Partner',
-                                            'bi-person-badge': user.user_type === 'Employee',
-                                            'bi-person': !['Partner','Employee'].includes(user.user_type),
-                                        }"></i>
-                                        {{ user.user_type }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold"
                                         :class="user.is_active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                                         <span class="w-1.5 h-1.5 rounded-full" :class="user.is_active ? 'bg-green-500' : 'bg-red-400'"></span>
@@ -178,12 +132,16 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button @click="openEditModal(user)"
+                                        <!-- Edit button hidden for company owner -->
+                                        <button
+                                            v-if="!isCompanyOwner(user)" @click="openEditModal(user)"
                                             class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all"
                                             title="Edit">
                                             <i class="bi bi-pencil text-sm"></i>
                                         </button>
-                                        <button @click="openDeleteModal(user.id)"
+                                        <!-- Delete button hidden for company owner -->
+                                        <button
+                                            v-if="!isCompanyOwner(user)" @click="openDeleteModal(user.id)"
                                             class="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
                                             title="Delete">
                                             <i class="bi bi-trash text-sm"></i>
@@ -222,7 +180,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Profile Picture</label>
                             <div class="border border-slate-200 rounded-xl bg-gray-100 p-3 overflow-y-auto max-h-[239px]" :class="{ 'border-red-400': errors.userImage }">
-                                <div class="avatar-grid ">
+                                <div class="avatar-grid">
                                     <div v-for="(avatar, idx) in defaultAvatars" :key="idx"
                                         class="avatar-item cursor-pointer rounded-full overflow-hidden transition-all bg-white border border-gray-200"
                                         :class="selectedAvatar === avatar ? 'border-primary shadow-md shadow-primary/20 scale-105' : 'hover:border-slate-200'"
@@ -247,21 +205,7 @@
                             <p v-if="errors.userImage" class="text-xs text-red-500 mt-1">{{ errors.userImage }}</p>
                         </div>
 
-                        <!-- User Type Toggle -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">User Type</label>
-                            <div class="flex gap-2">
-                                <button v-for="type in ['Employee', 'Partner']" :key="type"
-                                    @click="userType = type"
-                                    class="flex-1 py-2 px-4 rounded-lg text-sm font-medium border transition-all"
-                                    :class="userType === type ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'">
-                                    <i class="bi mr-1.5" :class="type === 'Partner' ? 'bi-briefcase' : 'bi-person-badge'"></i>
-                                    {{ type }}
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Form Grid (without partner/employee specific fields) -->
+                        <!-- Form Grid -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Full Name <span class="text-red-400">*</span></label>
@@ -284,7 +228,9 @@
                                     :class="errors.phone_number ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
                                 <p v-if="errors.phone_number" class="text-xs text-red-500 mt-1">{{ errors.phone_number }}</p>
                             </div>
-                            <div>
+
+                            <!-- Password Field - Visible ONLY to Company Owner when editing -->
+                            <div v-if="!editID || (editID && isLoggedInUserOwner)">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">
                                     {{ editID ? 'Change Password' : 'Password' }}
                                     <span v-if="!editID" class="text-red-400">*</span>
@@ -303,7 +249,7 @@
                             </div>
 
                             <!-- Custom Multi-Select for Roles -->
-                            <div class="relative">
+                            <div class="relative" ref="roleDropdownRef">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Role <span class="text-red-400">*</span></label>
                                 <div class="relative">
                                     <button type="button" @click="toggleRoleDropdown"
@@ -398,8 +344,8 @@
             <div v-for="toast in toasts" :key="toast.id" :class="[
                 'flex items-center p-4 rounded-lg shadow-lg border-l-4 transition-all duration-300 transform',
                 toast.type === 'success' ? 'bg-green-50 border-green-500 text-green-800' : '',
-                toast.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' : '',
-                toast.type === 'info' ? 'bg-blue-50 border-blue-500 text-blue-800' : '',
+                toast.type === 'error'   ? 'bg-red-50 border-red-500 text-red-800'       : '',
+                toast.type === 'info'    ? 'bg-blue-50 border-blue-500 text-blue-800'    : '',
                 toast.type === 'warning' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' : '',
                 toast.visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0',
             ]">
@@ -422,7 +368,7 @@
                     <div class="text-sm">{{ toast.detail }}</div>
                 </div>
                 <button @click="removeToast(toast.id)" class="ml-4 text-gray-400 hover:text-gray-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 20 20">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
@@ -432,12 +378,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
-import CompanyLayout from "@/Layouts/CompanyLayout.vue";
-// import { APP_URL } from '@/utils/constants/generalConstants'
+import { usePage } from '@inertiajs/vue3'
+import CompanyLayout from "@/Layouts/CompanyLayout.vue"
 
-// ── Props from Inertia (users list) ──────────────────────────────────────────
+// ── Get logged-in user from Inertia shared props ─────────────────────────────
+const page = usePage()
+const authUser = computed(() => page.props.auth.user)
+
+// Check if logged-in user is Company Owner
+const isLoggedInUserOwner = computed(() => {
+    return authUser.value?.roles?.some(role => role.name.toLowerCase() === 'company owner') ?? false
+})
+
+// ── Props from Inertia ────────────────────────────────────────────────────────
 const props = defineProps({
     users: {
         type: Array,
@@ -449,40 +404,66 @@ const props = defineProps({
 const loading    = ref(false)
 const submitting = ref(false)
 const deleting   = ref(false)
-const users      = ref(props.users)
+const users      = ref(Array.isArray(props.users) ? props.users : [])  // Ensure array
 const roleList   = ref([])
 const errors     = ref({})
 
-// Filter/search
+// Filter / search
 const searchQuery  = ref('')
-const filterType   = ref('')
 const filterStatus = ref('')
 
 // Modals
-const isModalOpen      = ref(false)
-const showDeleteModal  = ref(false)
-const deleteTargetId   = ref(null)
+const isModalOpen     = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId  = ref(null)
 
 // Form state
-const editID          = ref(null)
-const userType        = ref('Employee')
-const showPassword    = ref(false)
-const selectedAvatar  = ref(null)
-const imagePreview    = ref('')
-const userImage       = ref(null)
+const editID         = ref(null)
+const showPassword   = ref(false)
+const selectedAvatar = ref(null)
+const imagePreview   = ref('')
+const userImage      = ref(null)
 
-const form = ref({
-    name:            '',
-    email:           '',
-    password:        '',
-    phone_number:    '',
-    is_active:       true,
-    role:            [],
-    address:         '',
+// Role dropdown
+const roleDropdownOpen = ref(false)
+const roleDropdownRef = ref(null)
+
+// Click outside handler
+const handleClickOutside = (event) => {
+    if (roleDropdownOpen.value && roleDropdownRef.value && !roleDropdownRef.value.contains(event.target)) {
+        roleDropdownOpen.value = false
+    }
+}
+
+// Watch for dropdown open state
+watch(roleDropdownOpen, (isOpen) => {
+    if (isOpen) {
+        document.addEventListener('click', handleClickOutside)
+    } else {
+        document.removeEventListener('click', handleClickOutside)
+    }
 })
 
-// Role dropdown state
-const roleDropdownOpen = ref(false)
+// Clean up on unmount
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+})
+
+// Toggle function
+const toggleRoleDropdown = (event) => {
+    event.stopPropagation()
+    roleDropdownOpen.value = !roleDropdownOpen.value
+}
+
+const form = ref({
+    name:         '',
+    email:        '',
+    password:     '',
+    phone_number: '',
+    is_active:    true,
+    role:         [],
+    address:      '',
+})
 
 // Toast system
 const toasts = ref([])
@@ -493,32 +474,37 @@ const defaultAvatars = Array.from({ length: 50 }, (_, i) => `avatar${i + 1}.png`
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 const filteredUsers = computed(() => {
+    // Guard against non-array
+    if (!Array.isArray(users.value)) return []
     return users.value.filter(u => {
         const matchesSearch = !searchQuery.value ||
             u.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
             u.email?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
             u.phone_number?.includes(searchQuery.value)
-        const matchesType = !filterType.value || u.user_type === filterType.value
         const matchesStatus = !filterStatus.value ||
             (filterStatus.value === 'active' && u.is_active) ||
             (filterStatus.value === 'inactive' && !u.is_active)
-        return matchesSearch && matchesType && matchesStatus
+        return matchesSearch && matchesStatus
     })
 })
 
 const selectedRolesText = computed(() => {
     if (!form.value.role.length) return ''
-    const selected = roleList.value.filter(r => form.value.role.includes(r.value)).map(r => r.label)
-    return selected.join(', ')
+    return roleList.value
+        .filter(r => form.value.role.includes(r.value))
+        .map(r => r.label)
+        .join(', ')
 })
 
-// ── Toast functions ──────────────────────────────────────────────────────────
+const isCompanyOwner = (user) => {
+    return user.roles?.some(role => role.name.toLowerCase() === 'company owner') ?? false
+}
+
+// ── Toast helpers ─────────────────────────────────────────────────────────────
 const showToast = (type, summary, detail, duration = 5000) => {
     const id = ++toastId
-    const toast = { id, type, summary, detail, duration, visible: true }
-    toasts.value.push(toast)
+    toasts.value.push({ id, type, summary, detail, duration, visible: true })
     setTimeout(() => removeToast(id), duration)
-    return id
 }
 
 const removeToast = (id) => {
@@ -534,20 +520,17 @@ onMounted(() => {
     fetchRoles()
 })
 
-onUnmounted(() => {
-    toasts.value.forEach(toast => {
-        if (toast.timeoutId) clearTimeout(toast.timeoutId)
-    })
-})
-
 // ── API Calls ─────────────────────────────────────────────────────────────────
 const fetchUsers = async () => {
     try {
         loading.value = true
-        const { data } = await axios.get(route('company.users.index'))
-        users.value = data
-    } catch {
+        const { data } = await axios.get(route('company.users.get'))
+        // Ensure data is an array
+        users.value = Array.isArray(data) ? data : []
+    } catch (error) {
+        console.error(error)
         showToast('error', 'Error', 'Failed to fetch users')
+        users.value = []
     } finally {
         loading.value = false
     }
@@ -556,18 +539,20 @@ const fetchUsers = async () => {
 const fetchRoles = async () => {
     try {
         const { data } = await axios.get(route('company.users.roles'))
-        roleList.value = data.map(r => ({ label: r.name, value: r.name }))
-    } catch {
+        roleList.value = Array.isArray(data) ? data.map(r => ({ label: r.name, value: r.name })) : []
+    } catch (error) {
+        console.error(error)
         showToast('error', 'Error', 'Failed to fetch roles')
+        roleList.value = []
     }
 }
 
 // ── Avatar / Image ────────────────────────────────────────────────────────────
 const selectAvatar = async (avatar) => {
     try {
-        const res = await fetch('/images/avatars/' + avatar)
+        const res  = await fetch('/images/avatars/' + avatar)
         const blob = await res.blob()
-        userImage.value = new File([blob], avatar, { type: blob.type })
+        userImage.value    = new File([blob], avatar, { type: blob.type })
         imagePreview.value = ''
         selectedAvatar.value = avatar
     } catch (e) { console.error(e) }
@@ -576,7 +561,7 @@ const selectAvatar = async (avatar) => {
 const handleImageUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
-    userImage.value = file
+    userImage.value      = file
     selectedAvatar.value = null
     const reader = new FileReader()
     reader.onloadend = () => { imagePreview.value = reader.result }
@@ -584,7 +569,7 @@ const handleImageUpload = (e) => {
 }
 
 const removeImage = () => {
-    userImage.value = null
+    userImage.value    = null
     imagePreview.value = ''
 }
 
@@ -595,11 +580,12 @@ const validate = () => {
     errors.value = {}
     if (!editID.value && !userImage.value && !selectedAvatar.value)
         errors.value.userImage = 'Profile picture is required.'
-    if (!form.value.name)         errors.value.name = 'Name is required.'
-    if (!form.value.email)        errors.value.email = 'Email is required.'
-    if (!editID.value && !form.value.password) errors.value.password = 'Password is required.'
+    if (!form.value.name)         errors.value.name         = 'Name is required.'
+    if (!form.value.email)        errors.value.email        = 'Email is required.'
+    if (!editID.value && !form.value.password)
+                                  errors.value.password     = 'Password is required.'
     if (!form.value.phone_number) errors.value.phone_number = 'Phone number is required.'
-    if (!form.value.role?.length) errors.value.role = 'Role is required.'
+    if (!form.value.role?.length) errors.value.role         = 'Role is required.'
     return Object.keys(errors.value).length === 0
 }
 
@@ -609,20 +595,26 @@ const submitForm = async () => {
     try {
         submitting.value = true
         const fd = new FormData()
-        fd.append('editID',        editID.value ?? '')
-        fd.append('name',          form.value.name)
-        fd.append('email',         form.value.email)
-        fd.append('phone_number',  form.value.phone_number)
-        fd.append('is_active',     form.value.is_active)
-        fd.append('address',       form.value.address ?? '')
-        fd.append('userType',      userType.value)
-        fd.append('role',          form.value.role.join(','))
+        fd.append('editID', editID.value ?? '')
+        fd.append('name', form.value.name)
+        fd.append('email', form.value.email)
+        fd.append('phone_number', form.value.phone_number)
+        fd.append('is_active', form.value.is_active ? 1 : 0)
+        fd.append('address', form.value.address ?? '')
+        // Send roles as array
+        form.value.role.forEach(role => fd.append('role[]', role))
         if (form.value.password) fd.append('password', form.value.password)
 
-        if (userImage.value) fd.append('profile_picture', userImage.value)
-        else if (selectedAvatar.value) fd.append('profile_picture', selectedAvatar.value)
+        if (userImage.value) {
+            fd.append('profile_picture', userImage.value)
+        } else if (selectedAvatar.value) {
+            fd.append('profile_picture', selectedAvatar.value)
+        }
 
-        const url = editID.value ? route('company.users.update') : route('company.users.store')
+        const url = editID.value
+            ? route('company.users.update')
+            : route('company.users.store')
+
         await axios.post(url, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
 
         showToast('success', editID.value ? 'User Updated' : 'User Created', 'User saved successfully.')
@@ -630,6 +622,7 @@ const submitForm = async () => {
         closeModal()
     } catch (err) {
         if (err.response?.data?.errors) {
+            // Show validation errors as toasts
             Object.values(err.response.data.errors).flat().forEach(msg => {
                 showToast('error', 'Validation Error', msg)
             })
@@ -643,13 +636,12 @@ const submitForm = async () => {
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 const resetForm = () => {
-    editID.value = null
-    userType.value = 'Employee'
+    editID.value         = null
     selectedAvatar.value = null
-    userImage.value = null
-    imagePreview.value = ''
-    showPassword.value = false
-    errors.value = {}
+    userImage.value      = null
+    imagePreview.value   = ''
+    showPassword.value   = false
+    errors.value         = {}
     form.value = {
         name: '', email: '', password: '', phone_number: '',
         is_active: true, role: [], address: '',
@@ -664,7 +656,6 @@ const openCreateModal = () => {
 const openEditModal = (user) => {
     resetForm()
     editID.value = user.id
-    userType.value = user.user_type
     form.value = {
         name:         user.name,
         email:        user.email,
@@ -679,8 +670,8 @@ const openEditModal = (user) => {
 
 const closeModal = () => {
     isModalOpen.value = false
-    resetForm()
     roleDropdownOpen.value = false
+    resetForm()
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
@@ -688,7 +679,6 @@ const openDeleteModal = (id) => {
     deleteTargetId.value = id
     showDeleteModal.value = true
 }
-
 const closeDeleteModal = () => {
     showDeleteModal.value = false
     deleteTargetId.value = null
@@ -701,16 +691,11 @@ const confirmDelete = async () => {
         showToast('success', 'Deleted', 'User deleted successfully.')
         await fetchUsers()
         closeDeleteModal()
-    } catch {
-        showToast('error', 'Error', 'Failed to delete user.')
+    } catch (err) {
+        showToast('error', 'Error', err.response?.data?.message || 'Failed to delete user.')
     } finally {
         deleting.value = false
     }
-}
-
-// ── Role dropdown toggle ──────────────────────────────────────────────────────
-const toggleRoleDropdown = () => {
-    roleDropdownOpen.value = !roleDropdownOpen.value
 }
 </script>
 

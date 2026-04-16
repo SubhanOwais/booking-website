@@ -10,7 +10,9 @@ export const useUserStore = defineStore('userData', () => {
     // ── Computed Permissions ──────────────────────────────────────────────────
     const isLoggedIn     = computed(() => !!user.value)
     const isSuperAdmin   = computed(() => !!user.value?.IsSuperAdmin)
-    const isCompanyOwner = computed(() => user.value?.User_Type === 'CompanyOwner')
+    const isCompanyOwner = computed(() => {
+        return user.value?.roles?.includes('Company Owner') || user.value?.User_Type === 'CompanyOwner';
+    });
     const isCompanyUser  = computed(() => user.value?.User_Type === 'CompanyUser')
     const isWebCustomer  = computed(() => user.value?.User_Type === 'WebCustomer')
     const isCompanyMember = computed(() =>

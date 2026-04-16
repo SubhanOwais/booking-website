@@ -170,6 +170,7 @@ Route::middleware('auth')->group(function () {
 
         // ── Company Users Management (Employees & Partners) ───────────────────
         Route::get('/users', [CompanyUserController::class, 'index'])->name('users.index');
+        Route::get('/users/get', [CompanyUserController::class, 'getUsers'])->name('users.get');
         Route::post('users/create', [CompanyUserController::class, 'store'])->name('users.store');
         Route::post('users/update', [CompanyUserController::class, 'update'])->name('users.update');
         Route::delete('users/delete/{id}', [CompanyUserController::class, 'destroy'])->name('users.destroy');

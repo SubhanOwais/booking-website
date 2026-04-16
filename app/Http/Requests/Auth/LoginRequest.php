@@ -41,22 +41,37 @@ class LoginRequest extends FormRequest
         $login    = trim($this->login);
         $password = $this->password;
 
+        // ✅ Do NOT filter by Is_Active here – we want to detect inactive accounts
         $user = User::where(function ($query) use ($login) {
             $query->where('Phone_Number', $login)
                 ->orWhere('Email', $login)
                 ->orWhere('User_Name', $login);
-        })
-        ->where('Is_Active', true)
-        ->first();
+        })->first();
 
-        if (!$user || !Hash::check($password, $user->Password)) {
+        // 1. User not found
+        if (!$user) {
             RateLimiter::hit($this->throttleKey());
             throw ValidationException::withMessages([
                 'login' => 'The credentials you entered are incorrect.',
             ]);
         }
 
-        // ✅ Allowed user types
+        // 2. Password incorrect
+        if (!Hash::check($password, $user->Password)) {
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'login' => 'The credentials you entered are incorrect.',
+            ]);
+        }
+
+        // 3. Account inactive
+        if (!$user->Is_Active) {
+            throw ValidationException::withMessages([
+                'login' => 'Your account has been deactivated. Please contact the company owner.',
+            ]);
+        }
+
+        // 4. Allowed user types (SuperAdmin is also allowed but already handled earlier)
         $allowedTypes = ['WebCustomer', 'CompanyOwner', 'CompanyUser'];
 
         if (!$user->IsSuperAdmin && !in_array($user->User_Type, $allowedTypes)) {
@@ -65,20 +80,14 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        // ✅ CompanyOwner / CompanyUser must have a company_id
+        // 5. CompanyOwner / CompanyUser must have a company_id
         if (in_array($user->User_Type, ['CompanyOwner', 'CompanyUser']) && !$user->Company_Id) {
             throw ValidationException::withMessages([
                 'login' => 'Your account is not linked to any company. Please contact support.',
             ]);
         }
 
-        // ✅ Check active status
-        if (!$user->Is_Active) {
-            throw ValidationException::withMessages([
-                'login' => 'Your account has been deactivated. Please contact support.',
-            ]);
-        }
-
+        // All checks passed – log the user in
         Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }

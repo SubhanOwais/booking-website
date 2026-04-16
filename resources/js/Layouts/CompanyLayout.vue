@@ -1,20 +1,31 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { onMounted } from 'vue';
 import { Head } from "@inertiajs/vue3";
 import Sidebar from "@/Components/CompanyPage/Sidebar.vue";
 import { useCompanyDataStore } from '@/stores/companyData';
+import { useUserStore } from "@/stores/userData";
 
-const store = useCompanyDataStore();
+const companyData = useCompanyDataStore();
+const userData = useUserStore()
 
 onMounted(() => {
     // Fetch data when the component mounts
-    store.fetchCompanyData();
+    companyData.fetchCompanyData();
+    userData.fetchUserData();
 });
 
 const props = defineProps({
     user: Object,
     company: Object,
+});
+
+// Get the correct role label for the logged‑in user
+const userRoleLabel = computed(() => {
+    if (userData.isCompanyOwner) return "Company Owner";
+    if (userData.isCompanyUser) return "Company User";
+    if (userData.isSuperAdmin) return "Super Admin";
+    return "User";
 });
 
 const sidebarOpen = ref(false);
