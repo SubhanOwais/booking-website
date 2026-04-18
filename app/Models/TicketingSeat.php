@@ -203,4 +203,9 @@ class TicketingSeat extends Model
     {
         return $bookings->sum('Fare');
     }
+
+    public function refundedBy()
+    {
+        return $this->belongsTo(User::class, 'Refund_By', 'id');
+    }
 }

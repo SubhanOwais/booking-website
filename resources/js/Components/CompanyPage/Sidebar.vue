@@ -57,7 +57,8 @@ const isActive = (name) => {
     ]">
         <!-- Logo -->
         <div class="flex relative items-center gap-3 px-6 py-4 border-b">
-            <img v-if="companyStore.company?.logo_url" :src="companyStore.company.logo_url" class="w-9 h-auto rounded object-cover" alt="logo">
+            <img v-if="companyStore.company?.logo_url" :src="companyStore.company.logo_url"
+                class="w-9 h-auto rounded object-cover" alt="logo">
             <div v-else class="flex items-center justify-center w-9 h-9 rounded-xl bg-primary">
                 <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 20 20" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -95,6 +96,22 @@ const isActive = (name) => {
                 Ticketing
             </Link>
 
+            <Link :href="route('company.refund.index')" :class="[
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer',
+                isActive('company.refund.index') ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            ]">
+                <i class="bi bi-bootstrap-reboot text-lg"></i>
+                Refund Tickets
+            </Link>
+
+            <Link :href="route('company.refund-report')" :class="[
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer',
+                isActive('company.refund-report') ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            ]">
+                <i class="bi bi-file-text"></i>
+                <span>Refund Report</span>
+            </Link>
+
             <Link :href="route('company.discount.index')" :class="[
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer',
                 isActive('company.discount.index') ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600 hover:bg-slate-100'
@@ -127,13 +144,14 @@ const isActive = (name) => {
                 Roles Management
             </Link>
 
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-100">
+            <!-- <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-100">
                 Schedules
-            </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-100">
+            </a> -->
+            <!-- <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-100">
                 Passengers
-            </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-100">
+            </a> -->
+            <a href="#"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:bg-slate-100">
                 <i class="bi bi-gear text-lg"></i>
                 Settings
             </a>

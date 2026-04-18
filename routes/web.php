@@ -26,6 +26,7 @@ use App\Http\Controllers\Company\CompanyTicketingController;
 use App\Http\Controllers\Company\CompanyUserController;
 use App\Http\Controllers\Company\RoleController;
 use App\Http\Controllers\Company\PermissionController;
+use App\Http\Controllers\Company\RefundReportController;
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -125,10 +126,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/ticketing/export', [TicketingController::class, 'export'])->name('ticketing.export');
         Route::get('/ticketing/{id}', [TicketingController::class, 'show'])->name('ticketing.show');
 
-        // Refund routes
-        Route::get('/refund', [RefundController::class, 'index'])->name('refund.index');
-        Route::post('/refund/process', [RefundController::class, 'processRefund'])->name('refund.process');
-
         // WebSite Detail
         Route::get('websites', [\App\Http\Controllers\Admin\WebsiteController::class, 'index'])->name('websites.index');
         Route::post('websites', [\App\Http\Controllers\Admin\WebsiteController::class, 'store'])->name('websites.store');
@@ -175,6 +172,16 @@ Route::middleware('auth')->group(function () {
         Route::post('users/update', [CompanyUserController::class, 'update'])->name('users.update');
         Route::delete('users/delete/{id}', [CompanyUserController::class, 'destroy'])->name('users.destroy');
         Route::get('users/roles', [CompanyUserController::class, 'getRoles'])->name('users.roles');
+
+        // Company Refund Routes
+        Route::get('/refund',         [RefundController::class, 'index'])        ->name('refund.index');
+        Route::get('/refund/data',     [RefundController::class, 'getRefunds'])   ->name('refund.data');
+        Route::get('/refund/live',    [RefundController::class, 'live'])         ->name('refund.live');
+        Route::post('/refund/process',[RefundController::class, 'processRefund'])->name('refund.process');
+
+        // Company Refund Report
+        Route::get('/refund-report', [RefundReportController::class, 'index'])->name('refund-report');
+        Route::get('/refund-report/export', [RefundReportController::class, 'export'])->name('refund-report.export');
 
         // Role & Permission Management (Company)
         Route::prefix('roles')->name('roles.')->group(function () {

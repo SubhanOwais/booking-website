@@ -12,7 +12,7 @@ const userData = useUserStore()
 onMounted(() => {
     // Fetch data when the component mounts
     companyData.fetchCompanyData();
-    userData.fetchUserData();
+    userData.fetchUser();
 });
 
 const props = defineProps({

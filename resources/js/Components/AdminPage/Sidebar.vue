@@ -34,9 +34,9 @@
                 🎫 Ticketing History
             </Link>
 
-            <Link :href="route('admin.refund.index')" class="block px-3 py-2 rounded-md hover:bg-indigo-50">
+            <!-- <Link :href="route('admin.refund.index')" class="block px-3 py-2 rounded-md hover:bg-indigo-50">
                 💰 Refund Tickets
-            </Link>
+            </Link> -->
 
             <!-- <Link :href="route('admin.discount.index')" class="block px-3 py-2 rounded-md hover:bg-indigo-50">
                 🏷️ Discount

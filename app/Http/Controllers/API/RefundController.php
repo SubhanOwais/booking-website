@@ -4,20 +4,18 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\TicketingSeat;
+use App\Models\City;
+use App\Models\CompanyCity;   // <-- add this
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 use Inertia\Inertia;
 
 class RefundController extends Controller
 {
-    // =========================================================================
-    // operator_id must match companies.company_id in DB
-    // =========================================================================
-    private $companies = [];
+    private array $companies = [];
 
     public function __construct()
     {
@@ -25,158 +23,160 @@ class RefundController extends Controller
     }
 
     // =========================================================================
-    // Show refund tickets page
+    // GET /refund  — render page shell only (no ticket data)
     // =========================================================================
-    public function index(Request $request)
+    public function index()
     {
-        $query = TicketingSeat::with(['fromCity', 'toCity'])
-            ->whereIn('Status', ['Cancelled', 'Pending Refund'])
-            ->orderBy('created_at', 'desc');
+        $companyId = Auth::user()->Company_Id;
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('PNR_No', 'like', "%{$search}%")
-                    ->orWhere('Passenger_Name', 'like', "%{$search}%")
-                    ->orWhere('Contact_No', 'like', "%{$search}%");
-            });
-        }
+        $stats = $this->buildStats($companyId);
 
-        if ($request->filled('company'))   $query->where('Company_Name', $request->company);
-        if ($request->filled('status'))    $query->where('Status', $request->status);
-        if ($request->filled('date_from')) $query->whereDate('created_at', '>=', $request->date_from);
-        if ($request->filled('date_to'))   $query->whereDate('created_at', '<=', $request->date_to);
+        $companyConfig = $this->findCompanyByDbId($companyId);
 
-        $tickets = $query->paginate(20)->withQueryString();
-
-        $stats = [
-            'total_cancelled' => TicketingSeat::where('Status', 'Cancelled')->count(),
-            'pending_refund'  => TicketingSeat::where('Status', 'Pending Refund')->count(),
-            'total_pending'   => TicketingSeat::where('Status', 'Pending Refund')->count(),
-        ];
-
-        $ticketCompanies = TicketingSeat::whereIn('Status', ['Cancelled', 'Pending Refund'])
-            ->distinct()
-            ->whereNotNull('Company_Name')
-            ->pluck('Company_Name')
-            ->filter()
-            ->values();
-
-        // ✅ Return operator_id so frontend can send it back in the refund payload
-        $refundCompanies = collect($this->companies)->map(fn($c) => [
-            'operator_id' => $c['operator_id'],
-            'name'        => $c['name'],
-            'logo'        => $c['logo'] ?? null,
-        ])->values()->toArray();
-
-        return Inertia::render('Admin/Refund/Index', [
-            'tickets'         => $tickets,
-            'stats'           => $stats,
-            'ticketCompanies' => $ticketCompanies,
-            'refundCompanies' => $refundCompanies,
-            'filters'         => [
-                'search'    => $request->search    ?? '',
-                'company'   => $request->company   ?? '',
-                'status'    => $request->status    ?? '',
-                'date_from' => $request->date_from ?? '',
-                'date_to'   => $request->date_to   ?? '',
-            ],
+        return Inertia::render('Company/Refund/Index', [
+            'stats'         => $stats,
+            'companyConfig' => $companyConfig ? [
+                'operator_id' => $companyConfig['operator_id'] ?? null,
+                'name'        => $companyConfig['name']        ?? 'Your Company',
+            ] : ['operator_id' => null, 'name' => 'Your Company'],
         ]);
     }
 
     // =========================================================================
-    // POST /admin/refund/process
+    // GET /refund/data  — JSON: paginated tickets (called by Vue on mount + filters)
+    // =========================================================================
+    public function getRefunds(Request $request)
+    {
+        $companyId = Auth::user()->Company_Id;
+
+        $tickets = $this->buildTicketQuery($companyId, $request)
+            ->paginate(20)
+            ->withQueryString();
+
+        // Flatten city names so Vue doesn't have to dig into nested relations
+        $tickets->getCollection()->transform(fn($t) => $this->mapTicket($t));
+
+        $stats = $this->buildStats($companyId);
+
+        return response()->json([
+            'tickets' => $tickets,
+            'stats'   => $stats,
+        ]);
+    }
+
+    // =========================================================================
+    // GET /refund/live  — JSON: same as getRefunds (used by background polling)
+    // =========================================================================
+    public function live(Request $request)
+    {
+        return $this->getRefunds($request);
+    }
+
+    // =========================================================================
+    // POST /refund/process
     // =========================================================================
     public function processRefund(Request $request)
     {
+        $companyId = Auth::user()->Company_Id;
+
         DB::beginTransaction();
 
         try {
             $validated = $request->validate([
                 'pnr_no'            => 'required|string',
-                'company_id'        => 'required|string',   // ✅ use company_id (operator_id)
                 'refund_percentage' => 'required|numeric|min:0|max:100',
                 'refund_amount'     => 'required|numeric|min:0',
             ]);
 
-            // ✅ Find ticket by PNR
-            $ticket = TicketingSeat::where('PNR_No', $validated['pnr_no'])->first();
+            // Lock row — prevents two agents processing the same ticket simultaneously
+            $ticket = TicketingSeat::where('PNR_No', $validated['pnr_no'])
+                ->where('Company_Id', $companyId)
+                ->lockForUpdate()
+                ->first();
 
             if (!$ticket) {
-                return response()->json(['success' => false, 'message' => 'PNR not found'], 404);
-            }
-
-            if ($ticket->Status !== 'Pending Refund') {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => 'Ticket is not in Pending Refund state',
-                ], 400);
-            }
-
-            // Validate refund amount
-            $maxRefund = $ticket->Fare * ($validated['refund_percentage'] / 100);
-            if ($validated['refund_amount'] > $maxRefund) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Refund amount exceeds allowed limit',
-                ], 400);
-            }
-
-            // ✅ Find company by operator_id (company_id from payload)
-            $companyConfig = $this->findCompanyById($validated['company_id']);
-
-            if (!$companyConfig) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Company config not found for ID: {$validated['company_id']}",
+                    'message' => 'PNR not found for your company.',
                 ], 404);
             }
 
-            // Call Refund API
-            $apiResponse = $this->callRefundAPI($companyConfig, $ticket);
-
-            if (!$this->isRefundAPISuccessful($apiResponse)) {
+            if ($ticket->Status !== 'Pending Refund') {
                 DB::rollBack();
                 return response()->json([
-                    'success'      => false,
-                    'message'      => 'Refund API failed',
-                    'api_response' => $apiResponse,
+                    'success' => false,
+                    'message' => 'This ticket has already been processed by another user.',
+                ], 409);
+            }
+
+            // Validate amount ceiling
+            $maxRefund = $ticket->Fare * ($validated['refund_percentage'] / 100);
+            if ($validated['refund_amount'] > $maxRefund + 0.01) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Refund amount exceeds the allowed limit.',
                 ], 400);
             }
 
-            // Update ticket to Cancelled
+            // ── External API call (optional — skipped if config not found) ───
+            $companyConfig = $this->findCompanyByDbId($companyId);
+
+            if ($companyConfig) {
+                $apiResponse = $this->callRefundAPI($companyConfig, $ticket);
+
+                if (!$this->isRefundAPISuccessful($apiResponse)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success'      => false,
+                        'message'      => 'External refund API call failed. Please try again.',
+                        'api_response' => $apiResponse,
+                    ], 400);
+                }
+            } else {
+                // No external API config — log and continue with local processing only
+                Log::warning('Refund processed without external API (no config found)', [
+                    'company_id' => $companyId,
+                    'pnr'        => $ticket->PNR_No,
+                ]);
+            }
+
+            // ── Update ticket ─────────────────────────────────────────────────
             $ticket->update([
-                'Status'             => 'Cancelled',
-                'collection_point' => 'Refunded',
-                'Refund_Amount'      => $validated['refund_amount'],
-                'Refund_Percentage'  => $validated['refund_percentage'],
-                'Refund_Date'        => now(),
-                'Refund_By'          => auth()->id(),
-                'Is_Return'          => 1,
+                'Status'            => 'Cancelled',
+                'collection_point'  => 'Refunded',
+                'Refund_Amount'     => $validated['refund_amount'],
+                'Refund_Percentage' => $validated['refund_percentage'],
+                'Refund_Date'       => now(),
+                'Refund_By'         => auth()->id(),
+                'Is_Return'         => 1,
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Refund processed successfully',
+                'message' => 'Refund processed successfully.',
                 'data'    => [
                     'pnr'               => $ticket->PNR_No,
-                    'seat_no'           => $ticket->Seat_No,
                     'passenger'         => $ticket->Passenger_Name,
                     'refund_amount'     => $ticket->Refund_Amount,
                     'refund_percentage' => $ticket->Refund_Percentage,
-                    'company'           => $companyConfig['name'],
-                    'api_response'      => $apiResponse,
                 ],
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $e->errors()], 422);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Refund error', ['message' => $e->getMessage(), 'pnr' => $request->pnr_no ?? null]);
+            Log::error('Company refund error', [
+                'company_id' => $companyId,
+                'pnr'        => $request->pnr_no ?? null,
+                'message'    => $e->getMessage(),
+            ]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -185,18 +185,119 @@ class RefundController extends Controller
     // PRIVATE HELPERS
     // =========================================================================
 
-    // ✅ Find by operator_id — matches the company_id sent from frontend
-    private function findCompanyById(string $companyId): ?array
+    /**
+     * Build the base TicketingSeat query scoped to the company with all filters.
+     */
+    private function buildTicketQuery(int|string $companyId, Request $request)
     {
-        return collect($this->companies)
-            ->firstWhere('operator_id', $companyId);
+        $query = TicketingSeat::query()
+            ->where('Company_Id', $companyId)
+            ->whereIn('Status', ['Cancelled', 'Pending Refund'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('PNR_No',         'like', "%{$s}%")
+                  ->orWhere('Passenger_Name','like', "%{$s}%")
+                  ->orWhere('Contact_No',    'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('status'))    $query->where('Status', $request->status);
+        if ($request->filled('date_from')) $query->whereDate('created_at', '>=', $request->date_from);
+        if ($request->filled('date_to'))   $query->whereDate('created_at', '<=', $request->date_to);
+
+        return $query;
     }
 
-    // Keep name lookup as fallback (used nowhere currently but handy)
-    private function findCompanyByName(string $companyName): ?array
+    /**
+     * Map a TicketingSeat model to a plain array with flat city name strings.
+     * City names are resolved directly from the City model using the Source/Destination IDs
+     * stored on the ticket — no Eloquent relationship required on the model.
+     */
+    private function mapTicket(TicketingSeat $ticket): array
     {
-        return collect($this->companies)
-            ->first(fn($c) => strcasecmp($c['name'], $companyName) === 0);
+        $companyId = Auth::user()->Company_Id;
+
+        // Get company‑specific city names using the mapping table
+        $fromCity = $this->getCompanyCityName($companyId, (int) $ticket->Source_ID);
+        $toCity   = $this->getCompanyCityName($companyId, (int) $ticket->Destination_ID);
+
+        return [
+            'id'               => $ticket->id,
+            'PNR_No'           => $ticket->PNR_No,
+            'Passenger_Name'   => $ticket->Passenger_Name,
+            'Contact_No'       => $ticket->Contact_No,
+            'Travel_Date'      => $ticket->Travel_Date,
+            'Travel_Time'      => $ticket->Travel_Time,
+            'Seat_No'          => $ticket->Seat_No,
+            'Fare'             => $ticket->Fare,
+            'Status'           => $ticket->Status,
+            'Refund_Reason'    => $ticket->Refund_Reason   ?? null,
+            'Refund_Amount'    => $ticket->Refund_Amount   ?? null,
+            'Refund_Percentage'=> $ticket->Refund_Percentage ?? null,
+            'Company_Id'       => $ticket->Company_Id,
+            'Company_Name'     => $ticket->Company_Name    ?? null,
+            'from_city_name'   => $fromCity,
+            'to_city_name'     => $toCity,
+        ];
+    }
+
+    /**
+     * Resolve a city name from either an already-loaded relation or a raw city ID.
+     */
+    private function getCompanyCityName(int $operatorId, int $globalCityId): string
+    {
+        try {
+            $mapping = CompanyCity::where('company_id', $operatorId)
+                ->where('city_id', $globalCityId)
+                ->where('active', true)
+                ->first();
+
+            if ($mapping && $mapping->key_id) {
+                $cityName = City::where('id', $mapping->key_id)->value('City_Name');
+                if ($cityName) return $cityName;
+            }
+        } catch (\Exception $e) {
+            Log::warning('getCompanyCityName failed in RefundController', [
+                'operator_id'    => $operatorId,
+                'global_city_id' => $globalCityId,
+                'error'          => $e->getMessage(),
+            ]);
+        }
+
+        // Fallback – direct city lookup by the global ID
+        return City::where('id', $globalCityId)->value('City_Name') ?? 'Unknown';
+    }
+
+    /**
+     * Build stats counts for the company.
+     */
+    private function buildStats(int|string $companyId): array
+    {
+        return [
+            'total_cancelled' => TicketingSeat::where('Company_Id', $companyId)
+                                    ->where('Status', 'Cancelled')->count(),
+            'pending_refund'  => TicketingSeat::where('Company_Id', $companyId)
+                                    ->where('Status', 'Pending Refund')->count(),
+        ];
+    }
+
+    /**
+     * Find company config by DB Company_Id.
+     * Checks multiple possible config keys so it works regardless of your config structure.
+     */
+    private function findCompanyByDbId(int|string $dbId): ?array
+    {
+        return collect($this->companies)->first(function ($c) use ($dbId) {
+            foreach (['company_db_id', 'Company_Id', 'db_id', 'id'] as $key) {
+                if (isset($c[$key]) && (string)$c[$key] === (string)$dbId) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     private function callRefundAPI(array $companyConfig, TicketingSeat $ticket): mixed
@@ -210,9 +311,9 @@ class RefundController extends Controller
         $response = Http::timeout(20)->get($url);
 
         Log::info('Refund API called', [
-            'company'    => $companyConfig['name'],
-            'pnr'        => $ticket->PNR_No,
-            'status'     => $response->status(),
+            'company' => $companyConfig['name'] ?? 'unknown',
+            'pnr'     => $ticket->PNR_No,
+            'status'  => $response->status(),
         ]);
 
         return $response->json();
@@ -221,8 +322,6 @@ class RefundController extends Controller
     private function isRefundAPISuccessful(mixed $apiResponse): bool
     {
         if (!is_array($apiResponse)) return false;
-
-        // ✅ Handle both 'SUCESS' (typo in API) and 'SUCCESS'
         $status = strtoupper($apiResponse[0]['status'] ?? '');
         return in_array($status, ['SUCESS', 'SUCCESS']);
     }
