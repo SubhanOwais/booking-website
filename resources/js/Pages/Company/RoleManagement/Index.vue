@@ -21,7 +21,7 @@
         </div>
 
         <!-- Roles Table (custom, no PrimeVue) -->
-        <div class="my-4 border border-gray-300 overflow-x-auto">
+        <div class="my-4 border border-gray-300 rounded-xl overflow-x-auto">
             <!-- Loading skeleton -->
             <div v-if="loading" class="flex flex-col p-4">
                 <div v-for="i in 4" :key="i" class="flex items-center gap-4 mb-4">
@@ -43,7 +43,8 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Role Name</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Permissions</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Created By</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase min-w-40">Created
+                            By</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                     </tr>
                 </thead>
@@ -59,34 +60,35 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <span class="inline-flex items-center px-2 py-1 text-sm font-medium text-purple-800 bg-purple-100 border border-purple-500 rounded-md">
+                            <span
+                                class="inline-flex items-center px-3 py-1 text-xs font-semibold text-cyan-700 bg-cyan-100 border border-cyan-200 rounded-md">
                                 {{ role.created_by || '—' }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            <div class="flex justify-center gap-2">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center">
+
                                 <!-- View -->
-                                <button @click="openViewModal(role)" title="View"
-                                    class="p-2 text-purple-600 border border-purple-600 rounded-full shadow bg-purple-500/25 hover:bg-purple-600 hover:text-white transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
-                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z" />
-                                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0" />
-                                    </svg>
+                                <button @click="openViewModal(role)"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-200 transition-all"
+                                    title="View">
+                                    <i class="bi bi-eye text-sm"></i>
                                 </button>
+
                                 <!-- Edit -->
-                                <button @click="openEditModal(role)" title="Edit"
-                                    class="p-2 text-blue-600 border border-blue-600 rounded-full shadow bg-blue-500/25 hover:bg-blue-600 hover:text-white transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
+                                <button @click="openEditModal(role)"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all"
+                                    title="Edit">
+                                    <i class="bi bi-pencil text-sm"></i>
                                 </button>
+
                                 <!-- Delete -->
-                                <button @click="DeleteModal(role.id)" title="Delete"
-                                    class="p-2 text-red-600 border border-red-600 rounded-full shadow bg-red-500/25 hover:bg-red-600 hover:text-white transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
+                                <button @click="DeleteModal(role.id)"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
+                                    title="Delete">
+                                    <i class="bi bi-trash text-sm"></i>
                                 </button>
+
                             </div>
                         </td>
                     </tr>
@@ -102,8 +104,10 @@
                 <div class="flex justify-between px-6 py-4 bg-gray-100 border-b rounded-t-2xl">
                     <h2 class="text-lg font-bold">{{ editId ? 'Edit Role' : 'Create New Role' }}</h2>
                     <button @click="closeModal" class="text-gray-500 hover:text-gray-900">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -174,11 +178,13 @@
                                 </tr>
                             </tbody>
                         </table>
-                        <div v-if="permissionsError" class="flex items-center justify-between px-3 py-2 mt-4 text-white bg-red-500 rounded-md">
+                        <div v-if="permissionsError"
+                            class="flex items-center justify-between px-3 py-2 mt-4 text-white bg-red-500 rounded-md">
                             {{ permissionsError }}
                             <button @click="permissionsError = ''" class="text-white hover:text-gray-200">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
@@ -201,62 +207,31 @@
         </div>
 
         <!-- Delete Confirmation Modal -->
-        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+        <div v-if="showDeleteModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             @click.self="closeDeleteModal">
             <div class="relative w-full max-w-md bg-white rounded-lg shadow-xl">
                 <div class="p-6">
                     <div class="flex items-start gap-4">
                         <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                             <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                             </svg>
                         </div>
                         <div>
                             <h3 class="text-lg font-semibold">Delete Role</h3>
-                            <p class="text-sm text-gray-500">Are you sure you want to delete this role? This action cannot be undone.</p>
+                            <p class="text-sm text-gray-500">Are you sure you want to delete this role? This action
+                                cannot be undone.</p>
                         </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
-                    <button @click="closeDeleteModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-50">Cancel</button>
-                    <button @click="confirmDelete" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Delete</button>
+                    <button @click="closeDeleteModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-50">Cancel</button>
+                    <button @click="confirmDelete"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Delete</button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Toast Container -->
-        <div class="fixed top-4 right-4 z-[100] space-y-2">
-            <div v-for="toast in toasts" :key="toast.id" :class="[
-                'flex items-center p-4 rounded-lg shadow-lg border-l-4 transition-all duration-300 transform',
-                toast.type === 'success' ? 'bg-green-50 border-green-500 text-green-800' : '',
-                toast.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' : '',
-                toast.type === 'info' ? 'bg-blue-50 border-blue-500 text-blue-800' : '',
-                toast.type === 'warning' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' : '',
-                toast.visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0',
-            ]">
-                <div class="flex-shrink-0 mr-3">
-                    <svg v-if="toast.type === 'success'" class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                    <svg v-else-if="toast.type === 'error'" class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                    <svg v-else-if="toast.type === 'warning'" class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                    <svg v-else class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <div class="font-medium">{{ toast.summary }}</div>
-                    <div class="text-sm">{{ toast.detail }}</div>
-                </div>
-                <button @click="removeToast(toast.id)" class="ml-4 text-gray-400 hover:text-gray-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
             </div>
         </div>
     </CompanyLayout>
@@ -266,34 +241,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import CompanyLayout from "@/Layouts/CompanyLayout.vue";
-
-// ── Toast System (self-contained) ────────────────────────────────────────────
-const toasts = ref([])
-let toastId = 0
-
-const showToast = (type, summary, detail, duration = 5000) => {
-    const id = ++toastId
-    const toast = { id, type, summary, detail, visible: true }
-    toasts.value.push(toast)
-    setTimeout(() => removeToast(id), duration)
-    return id
-}
-
-const removeToast = (id) => {
-    const index = toasts.value.findIndex(t => t.id === id)
-    if (index !== -1) {
-        toasts.value[index].visible = false
-        setTimeout(() => {
-            toasts.value.splice(index, 1)
-        }, 300)
-    }
-}
-
-onUnmounted(() => {
-    toasts.value.forEach(toast => {
-        if (toast.timeoutId) clearTimeout(toast.timeoutId)
-    })
-})
+import toast from '@/Services/toast'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const isOpen = ref(false)
@@ -329,8 +277,9 @@ const fetchRoles = async () => {
         loading.value = true
         const { data } = await axios.get(route('company.roles.list'))
         roles.value = data
+        toast.info('Loaded', 'Roles fetched successfully.')
     } catch (error) {
-        showToast('error', 'Error', 'Failed to fetch roles')
+        toast.error('Error', 'Failed to fetch roles')
         roles.value = []
     } finally {
         loading.value = false
@@ -343,7 +292,7 @@ const fetchPermissions = async () => {
         const { data } = await axios.get(route('company.permissions'))
         permissions.value = data
     } catch (error) {
-        showToast('error', 'Error', 'Failed to fetch permissions')
+        toast.error('Error', 'Failed to fetch permissions')
         permissions.value = {}
     } finally {
         loadingPermissions.value = false
@@ -356,6 +305,7 @@ const submitForm = async () => {
         return
     }
     roleNameError.value = ''
+
     if (selectedPermissions.value.length === 0) {
         permissionsError.value = 'At least one permission must be selected.'
         return
@@ -368,32 +318,43 @@ const submitForm = async () => {
             editId: editId.value || null,
             permissions: selectedPermissions.value
         }
+
         const { data } = await axios.post(route('company.roles.save'), payload)
+
         if (data.status === 'success') {
-            showToast('success', 'Success', editId.value ? 'Role updated.' : 'Role created.')
+            toast.success(
+                'Success',
+                editId.value ? 'Role updated.' : 'Role created.'
+            )
             closeModal()
             fetchRoles()
         } else {
-            showToast('error', 'Error', data.message || 'Something went wrong.')
+            toast.error('Error', data.message || 'Something went wrong.')
         }
+
     } catch (err) {
         const msg = err.response?.data?.message || 'Failed to save role'
-        showToast('error', 'Error', msg)
+        toast.error('Error', msg)
     }
 }
 
+
 const confirmDelete = async () => {
     try {
-        const { data } = await axios.delete(route('company.roles.delete', { id: deleteId.value }))
+        const { data } = await axios.delete(
+            route('company.roles.delete', { id: deleteId.value })
+        )
+
         if (data.status === true) {
-            showToast('success', 'Deleted', 'Role deleted successfully.')
+            toast.success('Deleted', 'Role deleted successfully.')
             closeDeleteModal()
             fetchRoles()
         } else {
-            showToast('error', 'Error', 'Could not delete role.')
+            toast.error('Error', 'Could not delete role.')
         }
+
     } catch (err) {
-        showToast('error', 'Error', 'Failed to delete role.')
+        toast.error('Error', 'Failed to delete role.')
     }
 }
 
