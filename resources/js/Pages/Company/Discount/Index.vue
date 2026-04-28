@@ -3,7 +3,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import CompanyLayout from '@/Layouts/CompanyLayout.vue';
 import axios from 'axios';
-import toast from '@/Services/toast'
 
 // Filter dropdown state
 const showFilterDropdown = ref(false);
@@ -40,7 +39,7 @@ const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedDiscount = ref(null);
 
-// console.log('Available Companies:', props.availableCompanies);
+console.log('Available Companies:', props.availableCompanies);
 
 const mappedCities = ref([]);
 const loadingMappedCities = ref(false);
@@ -114,14 +113,14 @@ const fetchMappedCities = async (mainCityId) => {
     loadingMappedCities.value = true;
     try {
         const response = await axios.get(`/company/discount/mapped-cities/${mainCityId}`);
-
         if (response.data.success) {
             mappedCities.value = response.data.mapped_cities;
-
-            toast.info('Loaded', 'Mapped cities loaded successfully');
+        } else {
+            mappedCities.value = [];
         }
     } catch (error) {
-        toast.error('Error', 'Failed to fetch mapped cities');
+        console.error('Failed to fetch mapped cities:', error);
+        mappedCities.value = [];
     } finally {
         loadingMappedCities.value = false;
     }
@@ -142,12 +141,7 @@ const closeCreateModal = () => {
 const submitCreate = () => {
     createForm.post(route('company.discount.store'), {
         onSuccess: () => {
-            closeCreateModal()
-
-            toast.success('Created', 'Discount created successfully')
-        },
-        onError: () => {
-            toast.error('Error', 'Failed to create discount')
+            closeCreateModal();
         }
     });
 };
@@ -181,12 +175,7 @@ const closeEditModal = () => {
 const submitEdit = () => {
     editForm.put(route('company.discount.update', selectedDiscount.value.id), {
         onSuccess: () => {
-            closeEditModal()
-
-            toast.info('Updated', 'Discount updated successfully')
-        },
-        onError: () => {
-            toast.error('Error', 'Failed to update discount')
+            closeEditModal();
         }
     });
 };
@@ -204,58 +193,23 @@ const closeDeleteModal = () => {
 const confirmDelete = () => {
     router.delete(route('company.discount.destroy', selectedDiscount.value.id), {
         onSuccess: () => {
-            closeDeleteModal()
-
-            toast.success('Deleted', 'Discount deleted successfully')
-        },
-        onError: () => {
-            toast.error('Error', 'Failed to delete discount')
+            closeDeleteModal();
         }
     });
 };
 
 const toggleActive = (id) => {
-    router.post(route('company.discount.toggle-active', id), {}, {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            toast.info('Updated', 'Discount status changed successfully');
-        },
-        onError: () => {
-            toast.error('Error', 'Failed to update status');
-        }
-    });
+    router.post(route('company.discount.toggle-active', id));
 };
 
 const restoreDiscount = (id) => {
-    router.post(route('company.discount.restore', id), {
-        onSuccess: () => {
-            toast.success('Restored', 'Discount restored successfully')
-        }
-    });
+    router.post(route('company.discount.restore', id));
 };
 
-const showForceDeleteModal = ref(false);
-const openForceDeleteModal = (discount) => {
-    selectedDiscount.value = discount;
-    showForceDeleteModal.value = true;
-};
-
-const closeForceDeleteModal = () => {
-    showForceDeleteModal.value = false;
-    selectedDiscount.value = null;
-};
-
-const confirmForceDelete = () => {
-    router.delete(route('company.discount.force-delete', selectedDiscount.value.id), {
-        onSuccess: () => {
-            closeForceDeleteModal();
-            toast.success('Deleted', 'Discount permanently deleted');
-        },
-        onError: () => {
-            toast.error('Error', 'Failed to permanently delete discount');
-        }
-    });
+const forceDeleteDiscount = (id) => {
+    if (confirm('Are you sure you want to permanently delete this discount? This action cannot be undone!')) {
+        router.delete(route('company.discount.force-delete', id));
+    }
 };
 
 const getStatusColor = (status) => {
@@ -276,12 +230,11 @@ const getStatusColor = (status) => {
     <CompanyLayout>
         <div>
             <!-- Header with Filter & Add buttons -->
-            <div class="mb-5 md:flex md:items-center md:justify-between">
+            <div class="mb-6 md:flex md:items-center md:justify-between">
                 <div class="flex-1 min-w-0">
-                    <h2 class="text-xl font-bold text-slate-800">
+                    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
                         🏷️ Discount Cities Management
                     </h2>
-                    <p class="text-sm text-slate-500 mt-0.5">Manage your discount cities</p>
                 </div>
                 <div class="flex mt-4 md:mt-0 md:ml-4 gap-3">
                     <!-- Filter Button -->
@@ -294,7 +247,7 @@ const getStatusColor = (status) => {
                             </svg>
                             Filter
                             <span v-if="searchQuery || filterStatus !== 'all'"
-                                class="ml-1 px-1.5 py-0.5 text-xs font-bold text-white bg-primary rounded-full">
+                                class="ml-1 px-1.5 py-0.5 text-xs font-bold text-white bg-indigo-500 rounded-full">
                                 {{ (searchQuery ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) }}
                             </span>
                         </button>
@@ -309,14 +262,14 @@ const getStatusColor = (status) => {
                                         class="block mb-1 text-xs font-semibold text-gray-500 uppercase">Search</label>
                                     <input v-model="searchQuery" type="text"
                                         placeholder="Search by name, cities, or companies..."
-                                        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary" />
+                                        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
                                 </div>
                                 <!-- Status Filter -->
                                 <div>
                                     <label
                                         class="block mb-1 text-xs font-semibold text-gray-500 uppercase">Status</label>
                                     <select v-model="filterStatus"
-                                        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary">
+                                        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                         <option value="all">All Status</option>
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
@@ -339,50 +292,44 @@ const getStatusColor = (status) => {
 
                     <!-- Add New Discount Button -->
                     <button @click="openCreateModal"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         <svg class="w-5 h-5 mr-2 -ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
                             fill="currentColor">
                             <path fill-rule="evenodd"
                                 d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
                                 clip-rule="evenodd" />
                         </svg>
-                        Add Discount
+                        Add New Discount
                     </button>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="overflow-hidden bg-white shadow sm:rounded-lg border border-primary">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-slate-50 border-b border-slate-200">
+                        <thead class="bg-primary text-white">
                             <tr>
-                                <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase">
+                                <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
                                     Name</th>
-                                <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase">
+                                <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
                                     Discount</th>
-                                <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase">
+                                <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
                                     Main City</th>
                                 <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase min-w-96">
+                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase min-w-96">
                                     Mapped Cities</th>
-                                <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase min-w-36">
+                                <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
                                     Companies</th>
-                                <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase">
+                                <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
                                     Status</th>
-                                <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-left text-slate-500 uppercase">
+                                <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
                                     Duration</th>
                                 <th
-                                    class="px-6 py-3 text-xs font-medium tracking-wider text-right text-slate-500 uppercase">
+                                    class="px-6 py-3 text-xs font-medium tracking-wider text-right text-white uppercase">
                                     Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-slate-100">
+                        <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="discount in filteredDiscounts" :key="discount.id"
                                 :class="{ 'bg-red-50': discount.deleted_at }">
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -390,7 +337,7 @@ const getStatusColor = (status) => {
                                     <!-- <div class="mt-1 text-xs text-gray-500">Created By: {{ discount.created_by }}</div> -->
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-bold text-red-600">{{ discount.discount_percentage }}%
+                                    <div class="text-sm font-bold text-indigo-600">{{ discount.discount_percentage }}%
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -451,14 +398,14 @@ const getStatusColor = (status) => {
                                                 {{ discount.is_active ? '✅' : '⭕' }}
                                             </button>
                                             <button @click="openEditModal(discount)"
-                                                class="text-primary hover:text-indigo-900" title="Edit">✏️</button>
+                                                class="text-indigo-600 hover:text-indigo-900" title="Edit">✏️</button>
                                             <button @click="openDeleteModal(discount)"
                                                 class="text-red-600 hover:text-red-900" title="Delete">🗑️</button>
                                         </template>
                                         <template v-else>
                                             <button @click="restoreDiscount(discount.id)"
                                                 class="text-green-600 hover:text-green-900" title="Restore">♻️</button>
-                                            <button @click="openForceDeleteModal(discount)"
+                                            <button @click="forceDeleteDiscount(discount.id)"
                                                 class="text-red-600 hover:text-red-900"
                                                 title="Permanently Delete">❌</button>
                                         </template>
@@ -481,7 +428,7 @@ const getStatusColor = (status) => {
         <teleport to="body">
             <div v-if="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 transition-opacity bg-black/50 backdrop-blur-sm">
+                    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75">
                     </div>
                     <div
                         class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
@@ -497,7 +444,7 @@ const getStatusColor = (status) => {
                                                     <label class="block text-sm font-medium text-gray-700">Discount Name
                                                         *</label>
                                                     <input v-model="createForm.name" type="text" required
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary"
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                                         placeholder="e.g., Summer Sale 2024" />
                                                     <div v-if="createForm.errors.name"
                                                         class="mt-1 text-sm text-red-600">{{
@@ -510,7 +457,7 @@ const getStatusColor = (status) => {
                                                         *</label>
                                                     <input v-model="createForm.discount_percentage" type="number"
                                                         min="0" max="100" required
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary"
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                                         placeholder="0-100" />
                                                     <div v-if="createForm.errors.discount_percentage"
                                                         class="mt-1 text-sm text-red-600">{{
@@ -523,7 +470,7 @@ const getStatusColor = (status) => {
                                                 <label class="block text-sm font-medium text-gray-700">Select Main City
                                                     *</label>
                                                 <select v-model="createForm.main_city_id" required
-                                                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary">
+                                                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                     <option :value="null">-- Select Main City --</option>
                                                     <option v-for="city in mainCities" :key="city.id" :value="city.id">
                                                         {{
@@ -547,7 +494,7 @@ const getStatusColor = (status) => {
                                                         class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                                                         <input type="checkbox" :value="city.id"
                                                             v-model="createForm.mapped_city_ids"
-                                                            class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
                                                         {{ city.name }}
                                                     </label>
                                                     <div v-if="mappedCities.length === 0"
@@ -574,7 +521,7 @@ const getStatusColor = (status) => {
                                                         class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                                                         <input type="checkbox" :value="company.id"
                                                             v-model="createForm.company_ids"
-                                                            class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
                                                         {{ company.name }}
                                                     </label>
                                                     <div v-if="availableCompanies.length === 0"
@@ -599,7 +546,7 @@ const getStatusColor = (status) => {
                                                     <label class="block text-sm font-medium text-gray-700">Start
                                                         Date</label>
                                                     <input v-model="createForm.start_date" type="datetime-local"
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary" />
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                                     <div v-if="createForm.errors.start_date"
                                                         class="mt-1 text-sm text-red-600">
                                                         {{ createForm.errors.start_date }}</div>
@@ -608,7 +555,7 @@ const getStatusColor = (status) => {
                                                     <label class="block text-sm font-medium text-gray-700">End
                                                         Date</label>
                                                     <input v-model="createForm.end_date" type="datetime-local"
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary" />
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                                     <div v-if="createForm.errors.end_date"
                                                         class="mt-1 text-sm text-red-600">{{
                                                             createForm.errors.end_date }}</div>
@@ -617,7 +564,7 @@ const getStatusColor = (status) => {
 
                                             <div class="flex items-center">
                                                 <input v-model="createForm.is_active" type="checkbox"
-                                                    class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                                                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
                                                 <label class="block ml-2 text-sm text-gray-900">Active (discount will be
                                                     applied
                                                     immediately)</label>
@@ -628,11 +575,11 @@ const getStatusColor = (status) => {
                             </div>
                             <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
                                 <button type="submit" :disabled="createForm.processing"
-                                    class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
+                                    class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
                                     {{ createForm.processing ? 'Creating...' : 'Create Discount' }}
                                 </button>
                                 <button type="button" @click="closeCreateModal"
-                                    class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                    class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                                     Cancel
                                 </button>
                             </div>
@@ -646,7 +593,7 @@ const getStatusColor = (status) => {
         <teleport to="body">
             <div v-if="showEditModal" class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 transition-opacity bg-black/50 backdrop-blur-sm" @click="closeEditModal">
+                    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="closeEditModal">
                     </div>
                     <div
                         class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
@@ -661,7 +608,7 @@ const getStatusColor = (status) => {
                                                     <label class="block text-sm font-medium text-gray-700">Discount Name
                                                         *</label>
                                                     <input v-model="editForm.name" type="text" required
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary" />
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                                     <div v-if="editForm.errors.name" class="mt-1 text-sm text-red-600">
                                                         {{
                                                             editForm.errors.name }}</div>
@@ -673,7 +620,7 @@ const getStatusColor = (status) => {
                                                         *</label>
                                                     <input v-model="editForm.discount_percentage" type="number" min="0"
                                                         max="100" required
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary" />
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                                     <div v-if="editForm.errors.discount_percentage"
                                                         class="mt-1 text-sm text-red-600">{{
                                                             editForm.errors.discount_percentage }}
@@ -685,7 +632,7 @@ const getStatusColor = (status) => {
                                                 <label class="block text-sm font-medium text-gray-700">Select Main City
                                                     *</label>
                                                 <select v-model="editForm.main_city_id" required
-                                                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary">
+                                                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                     <option :value="null">-- Select Main City --</option>
                                                     <option v-for="city in mainCities" :key="city.id" :value="city.id">
                                                         {{
@@ -709,7 +656,7 @@ const getStatusColor = (status) => {
                                                         class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                                                         <input type="checkbox" :value="city.id"
                                                             v-model="editForm.mapped_city_ids"
-                                                            class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
                                                         {{ city.name }}
                                                     </label>
                                                     <div v-if="mappedCities.length === 0"
@@ -736,7 +683,7 @@ const getStatusColor = (status) => {
                                                         class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                                                         <input type="checkbox" :value="company.id"
                                                             v-model="editForm.company_ids"
-                                                            class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
                                                         {{ company.name }}
                                                     </label>
                                                     <div v-if="availableCompanies.length === 0"
@@ -761,7 +708,7 @@ const getStatusColor = (status) => {
                                                     <label class="block text-sm font-medium text-gray-700">Start
                                                         Date</label>
                                                     <input v-model="editForm.start_date" type="datetime-local"
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary" />
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                                     <div v-if="editForm.errors.start_date"
                                                         class="mt-1 text-sm text-red-600">{{
                                                             editForm.errors.start_date }}</div>
@@ -770,7 +717,7 @@ const getStatusColor = (status) => {
                                                     <label class="block text-sm font-medium text-gray-700">End
                                                         Date</label>
                                                     <input v-model="editForm.end_date" type="datetime-local"
-                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring-primary" />
+                                                        class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                                     <div v-if="editForm.errors.end_date"
                                                         class="mt-1 text-sm text-red-600">{{
                                                             editForm.errors.end_date }}</div>
@@ -779,7 +726,7 @@ const getStatusColor = (status) => {
 
                                             <div class="flex items-center">
                                                 <input v-model="editForm.is_active" type="checkbox"
-                                                    class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                                                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
                                                 <label class="block ml-2 text-sm text-gray-900">Active</label>
                                             </div>
                                         </div>
@@ -788,11 +735,11 @@ const getStatusColor = (status) => {
                             </div>
                             <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
                                 <button type="submit" :disabled="editForm.processing"
-                                    class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
+                                    class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
                                     {{ editForm.processing ? 'Updating...' : 'Update Discount' }}
                                 </button>
                                 <button type="button" @click="closeEditModal"
-                                    class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                    class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                                     Cancel
                                 </button>
                             </div>
@@ -806,8 +753,7 @@ const getStatusColor = (status) => {
         <teleport to="body">
             <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 transition-opacity bg-black/50 backdrop-blur-sm"
-                        @click="closeDeleteModal">
+                    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="closeDeleteModal">
                     </div>
                     <div
                         class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
@@ -826,7 +772,7 @@ const getStatusColor = (status) => {
                                     <div class="mt-2">
                                         <p class="text-sm text-gray-500">
                                             Are you sure you want to delete <strong>{{ selectedDiscount?.name
-                                                }}</strong>? This
+                                            }}</strong>? This
                                             action can be restored later.
                                         </p>
                                     </div>
@@ -839,62 +785,8 @@ const getStatusColor = (status) => {
                                 Delete
                             </button>
                             <button type="button" @click="closeDeleteModal"
-                                class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                                 Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </teleport>
-
-        <!-- Permanent Delete Confirmation Modal -->
-        <teleport to="body">
-            <div v-if="showForceDeleteModal" class="fixed inset-0 z-50 overflow-y-auto">
-                <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-
-                    <!-- Overlay -->
-                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeForceDeleteModal"></div>
-
-                    <!-- Modal -->
-                    <div
-                        class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-
-                        <div class="px-6 py-5">
-                            <div class="flex items-start gap-4">
-
-                                <!-- Icon -->
-                                <div class="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full">
-                                    <span class="text-2xl">⚠️</span>
-                                </div>
-
-                                <!-- Content -->
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900">
-                                        Permanent Delete
-                                    </h3>
-                                    <p class="mt-2 text-sm text-gray-500">
-                                        This will permanently delete
-                                        <strong>{{ selectedDiscount?.name }}</strong>.
-                                        <br />
-                                        <span class="text-red-600 font-medium">
-                                            This action cannot be undone!
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
-                            <button @click="closeForceDeleteModal"
-                                class="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-100">
-                                Cancel
-                            </button>
-
-                            <button @click="confirmForceDelete"
-                                class="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 shadow">
-                                Permanently Delete
                             </button>
                         </div>
                     </div>

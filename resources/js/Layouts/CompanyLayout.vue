@@ -5,7 +5,6 @@ import { Head } from "@inertiajs/vue3";
 import Sidebar from "@/Components/CompanyPage/Sidebar.vue";
 import { useCompanyDataStore } from '@/stores/companyData';
 import { useUserStore } from "@/stores/userData";
-import Toast from '@/Components/Toast.vue'
 
 const companyData = useCompanyDataStore();
 const userData = useUserStore()
@@ -70,7 +69,6 @@ function toggleSidebar() {
             <main class="p-8 min-h-screen bg-gray-50">
                 <slot />
             </main>
-            <Toast />
         </div>
     </div>
 </template>
