@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import CompanyLayout from '@/Layouts/CompanyLayout.vue'
+import toast from '@/Services/toast'
 
 const props = defineProps({
     tickets: Object,
@@ -72,10 +73,14 @@ const activeFilterCount = () => {
 // Apply filters (reload page via Inertia)
 const applyFilters = () => {
     filterOpen.value = false
+
     router.get(route('company.refund-report'), filterForm.value, {
         preserveState: true,
         preserveScroll: true,
         replace: true,
+        onSuccess: () => {
+            // toast.info('Filters Applied', 'Report updated successfully')
+        }
     })
 }
 
@@ -88,7 +93,9 @@ const clearFilters = () => {
         travel_to: '',
         refund_percent_range: '',
     }
-    applyFilters()
+    filterOpen.value = false
+    toast.info('Filters Cleared', 'Report updated successfully')
+    // applyFilters()
 }
 
 // Pagination
@@ -118,9 +125,10 @@ const isExporting = ref(false)
 
 const exportTickets = async () => {
     isExporting.value = true
+
     try {
-        // Build query string from current filters
         const params = new URLSearchParams()
+
         if (filterForm.value.search) params.append('search', filterForm.value.search)
         if (filterForm.value.refund_from) params.append('refund_from', filterForm.value.refund_from)
         if (filterForm.value.refund_to) params.append('refund_to', filterForm.value.refund_to)
@@ -130,16 +138,22 @@ const exportTickets = async () => {
 
         const url = route('company.refund-report.export') + '?' + params.toString()
 
-        // Trigger download via hidden link
         const link = document.createElement('a')
         link.href = url
         link.download = ''
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+
+        // ✅ SUCCESS TOAST
+        toast.success('Export Started', 'Your file is being downloaded.')
+
     } catch (error) {
         console.error('Export failed:', error)
-        alert('Failed to export data. Please try again.')
+
+        // ❌ ERROR TOAST (replaces alert)
+        toast.error('Export Failed', 'Please try again later.')
+
     } finally {
         isExporting.value = false
     }
@@ -159,7 +173,7 @@ const exportTickets = async () => {
             <div class="flex items-center gap-2">
                 <!-- Export CSV -->
                 <button @click="exportTickets" :disabled="isExporting"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
+                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
 
                     <!-- Spinner when exporting -->
                     <svg v-if="isExporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

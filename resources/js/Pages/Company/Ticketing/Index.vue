@@ -2,9 +2,7 @@
 import { Head, router, Link } from "@inertiajs/vue3";
 import CompanyLayout from "@/Layouts/CompanyLayout.vue";
 import { ref } from "vue";
-import { useToast } from "vue-toast-notification";
-
-const toast = useToast();
+import toast from '@/Services/toast'
 
 const props = defineProps({
     tickets: Object,
@@ -49,20 +47,38 @@ const clearFilters = () => {
 };
 
 const isExporting = ref(false);
-const exportTickets = () => {
-    isExporting.value = true;
+const exportTickets = async () => {
+    isExporting.value = true
 
-    const cleanFilters = Object.fromEntries(
-        Object.entries(filterForm.value).filter(([_, v]) => v !== "" && v !== null)
-    );
-    const queryString = new URLSearchParams(cleanFilters).toString();
-    window.location.href = route("company.ticketing.export") + (queryString ? "?" + queryString : "");
+    try {
+        const params = new URLSearchParams()
 
-    // Hide loader after 3s (file download starts by then)
-    setTimeout(() => {
-        isExporting.value = false;
-    }, 3000);
-};
+        if (filterForm.value.status) params.append('status', filterForm.value.status)
+        if (filterForm.value.date_from) params.append('date_from', filterForm.value.date_from)
+        if (filterForm.value.date_to) params.append('date_to', filterForm.value.date_to)
+        if (filterForm.value.booked_from) params.append('booked_from', filterForm.value.booked_from)
+        if (filterForm.value.booked_to) params.append('booked_to', filterForm.value.booked_to)
+        if (filterForm.value.search) params.append('search', filterForm.value.search)
+        if (filterForm.value.company) params.append('company', filterForm.value.company)
+
+        const url = route('company.ticketing.export') + (params.toString() ? '?' + params.toString() : '')
+
+        const link = document.createElement('a')
+        link.href = url
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+
+        toast.success('Export Started', 'Tickets export download has started.')
+    } catch (error) {
+        console.error('Export failed:', error)
+        toast.error('Export Failed', 'Unable to export tickets. Try again.')
+    } finally {
+        setTimeout(() => {
+            isExporting.value = false
+        }, 2000)
+    }
+}
 
 // ── Ticket Detail Modal ───────────────────────────────────────────────────────
 const modalOpen = ref(false);
@@ -70,9 +86,9 @@ const selectedTicket = ref(null);
 const modalLoading = ref(false);
 
 const openTicketModal = async (ticketId) => {
-    modalOpen.value = true;
-    modalLoading.value = true;
-    selectedTicket.value = null;
+    modalOpen.value = true
+    modalLoading.value = true
+    selectedTicket.value = null
 
     try {
         const response = await fetch(route("company.ticketing.show", ticketId), {
@@ -80,17 +96,17 @@ const openTicketModal = async (ticketId) => {
                 Accept: "application/json",
                 "X-Requested-With": "XMLHttpRequest",
             },
-        });
-        const data = await response.json();
-        // Handle both { ticket: {...} } and flat object responses
-        selectedTicket.value = data.ticket ?? data;
-        console.log("Loaded ticket details:", selectedTicket.value);
+        })
+
+        const data = await response.json()
+        selectedTicket.value = data.ticket ?? data
     } catch (e) {
-        console.error("Failed to load ticket", e);
+        console.error("Failed to load ticket", e)
+        toast.error('Error', 'Failed to load ticket details')
     } finally {
-        modalLoading.value = false;
+        modalLoading.value = false
     }
-};
+}
 
 const closeModal = () => {
     modalOpen.value = false;
@@ -143,76 +159,43 @@ const isLoadingTicket = ref(false);
 // Update the download ticket function
 const downloadTicket = async (pnr, customerId) => {
     if (!pnr) {
-        console.error("❌ No PNR provided for ticket download");
-        toast.warning("Ticket PNR not found", {
-            position: "top-right",
-            duration: 3000,
-            dismissible: true,
-        });
-        return;
+        toast.error('Missing Data', 'PNR not found for ticket download')
+        return
     }
 
-    // Set loading to true at the beginning
-    isLoadingTicket.value = true;
+    isLoadingTicket.value = true
 
     try {
-        // console.log("🔄 Generating ticket for PNR:", pnr);
-
         const response = await axios.post("/api/bookings/generate-ticket", {
-            pnr: pnr,
+            pnr,
             customer_id: customerId,
-        });
+        })
 
         if (response.data.success) {
-            const ticketUrl = response.data.data.ticket_url;
-            console.log("✅ Ticket generated:", ticketUrl);
+            const ticketUrl = response.data.data.ticket_url
 
-            // Create a temporary link element and trigger download
-            const link = document.createElement("a");
-            link.href = ticketUrl;
-            link.download = `ticket_${pnr}.jpg`;
-            link.target = "_blank";
+            const link = document.createElement("a")
+            link.href = ticketUrl
+            link.download = `ticket_${pnr}.jpg`
+            link.target = "_blank"
 
-            // Append to body, click, and remove
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
 
-            // Clean up the URL object if needed
-            URL.revokeObjectURL(ticketUrl);
+            URL.revokeObjectURL(ticketUrl)
 
-            console.log("📥 Download initiated for ticket");
+            toast.success('Download Started', 'Ticket download has started.')
         } else {
-            console.error(
-                "❌ Ticket generation failed:",
-                response.data.message
-            );
-            toast.warning(
-                "Failed to generate ticket: " + response.data.message,
-                {
-                    position: "top-right",
-                    duration: 3000,
-                    dismissible: true,
-                }
-            );
+            toast.error('Failed', response.data.message || 'Ticket generation failed.')
         }
     } catch (error) {
-        console.error("❌ Ticket generation error:", error);
-        toast.warning(
-            "Error generating ticket: " +
-            (error.response?.data?.message || error.message),
-            {
-                position: "top-right",
-                duration: 3000,
-                dismissible: true,
-            }
-        );
+        console.error("Ticket generation error:", error)
+        toast.error('Error', 'Something went wrong while generating ticket.')
     } finally {
-        // Set loading to false when done
-        isLoadingTicket.value = false;
+        isLoadingTicket.value = false
     }
-};
-
+}
 </script>
 
 <template>
@@ -229,11 +212,12 @@ const downloadTicket = async (pnr, customerId) => {
                     <div class="flex items-center gap-2">
                         <!-- Export CSV -->
                         <button @click="exportTickets" :disabled="isExporting"
-                            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
+                            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
 
                             <!-- Spinner when exporting -->
                             <svg v-if="isExporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4" />
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                             </svg>
 
@@ -340,22 +324,79 @@ const downloadTicket = async (pnr, customerId) => {
 
                 <!-- Statistics Cards -->
                 <div class="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
-                    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow">
-                        <div class="text-sm text-gray-600">Total Tickets</div>
-                        <div class="text-2xl font-bold text-gray-900">{{ stats.total }}</div>
+
+                    <!-- Total Tickets -->
+                    <div
+                        class="relative p-5 bg-white border border-gray-100 rounded shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Total Tickets</div>
+                                <div class="mt-1 text-3xl font-bold text-gray-900 tracking-tight">
+                                    {{ stats.total }}
+                                </div>
+                            </div>
+                            <div class="p-3 text-blue-600 bg-blue-50 rounded-xl border boder-blue-100">
+                                <i class="bi bi-ticket-perforated text-xl"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow">
-                        <div class="text-sm text-gray-600">Pending</div>
-                        <div class="text-2xl font-bold text-yellow-600">{{ stats.pending }}</div>
+
+                    <!-- Pending -->
+                    <div
+                        class="relative p-5 bg-white border border-gray-100 rounded shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Pending</div>
+                                <div class="mt-1 text-3xl font-bold text-yellow-600 tracking-tight">
+                                    {{ stats.pending }}
+                                </div>
+                            </div>
+                            <div class="p-3 text-yellow-600 bg-yellow-50 rounded-xl border boder-yellow-100">
+                                <i class="bi bi-hourglass-split text-xl"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow">
-                        <div class="text-sm text-gray-600">Confirmed</div>
-                        <div class="text-2xl font-bold text-green-600">{{ stats.confirmed }}</div>
+
+                    <!-- Confirmed -->
+                    <div
+                        class="relative p-5 bg-white border border-gray-100 rounded shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Confirmed</div>
+                                <div class="mt-1 text-3xl font-bold text-green-600 tracking-tight">
+                                    {{ stats.confirmed }}
+                                </div>
+                            </div>
+                            <div class="p-3 text-green-600 bg-green-50 rounded-xl border border-green-100">
+                                <i class="bi bi-check-circle text-xl"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow">
-                        <div class="text-sm text-gray-600">Cancelled</div>
-                        <div class="text-2xl font-bold text-red-600">{{ stats.cancelled }}</div>
+
+                    <!-- Cancelled -->
+                    <div
+                        class="relative p-5 bg-white border border-gray-100 rounded shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Cancelled</div>
+                                <div class="mt-1 text-3xl font-bold text-red-600 tracking-tight">
+                                    {{ stats.cancelled }}
+                                </div>
+                            </div>
+                            <div class="p-3 text-red-600 bg-red-50 rounded-xl border border-red-100">
+                                <i class="bi bi-x-circle text-xl"></i>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
 
@@ -537,7 +578,7 @@ const downloadTicket = async (pnr, customerId) => {
                                     <dl class="space-y-2.5">
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">PNR Number</dt>
-                                            <dd class="text-sm font-bold text-indigo-600 font-mono">{{
+                                            <dd class="text-sm font-bold text-red-700 font-mono">{{
                                                 selectedTicket.PNR_No }}
                                             </dd>
                                         </div>
@@ -550,7 +591,7 @@ const downloadTicket = async (pnr, customerId) => {
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Contact</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Contact_No
-                                                }}</dd>
+                                            }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Emergency Contact</dt>
@@ -604,13 +645,13 @@ const downloadTicket = async (pnr, customerId) => {
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Travel Time</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Travel_Time
-                                                }}</dd>
+                                            }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Seat Number</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{
                                                 formatSeats(selectedTicket.Seat_No)
-                                                }}</dd>
+                                            }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Company</dt>
@@ -683,7 +724,7 @@ const downloadTicket = async (pnr, customerId) => {
                                             <dt class="text-sm text-gray-500">Issued By</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Issued_By ||
                                                 'N/A'
-                                                }}</dd>
+                                            }}</dd>
                                         </div>
                                         <div class="flex justify-between items-center">
                                             <dt class="text-sm text-gray-500">SMS Sent</dt>
@@ -706,7 +747,7 @@ const downloadTicket = async (pnr, customerId) => {
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Loyalty Points</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Points || 0
-                                                }}</dd>
+                                            }}</dd>
                                         </div>
                                     </dl>
                                 </div>

@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { Link } from "@inertiajs/vue3";
 import Sidebar from "@/Components/AdminPage/Sidebar.vue";
+import Toast from '@/Components/Toast.vue'
 
 defineProps({
     title: {
@@ -54,4 +55,6 @@ const sidebarOpen = ref(false);
             </main>
         </div>
     </div>
+
+    <Toast />
 </template>

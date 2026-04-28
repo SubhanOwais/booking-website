@@ -4,6 +4,7 @@ import { Head, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import CompanyLayout from '@/Layouts/CompanyLayout.vue'
 import CompanyRefundModal from './RefundModal.vue'
+import toast from '@/Services/toast'
 
 // ── Props (page shell only – no ticket data from server) ──────────────────
 const props = defineProps({
@@ -32,10 +33,6 @@ const filterForm = ref({
 let pollInterval = null
 const POLL_MS = 8000
 
-// Toasts
-const toasts = ref([])
-let toastCount = 0
-
 // ── Helper: active filter count (for badge) ──────────────────────────────
 const activeFilterCount = () => {
     let count = 0
@@ -57,10 +54,21 @@ const fetchData = async (showPageLoader = false) => {
         tickets.value = data.tickets
         stats.value = data.stats
         lastUpdated.value = new Date()
+        toast.add({
+            severity: 'info',
+            summary: 'Success',
+            detail: 'Refund tickets loaded Successfully.',
+            life: 3000,
+        })
     } catch (e) {
         console.error('Refund data fetch error:', e.response?.data || e.message)
         const errorMsg = e.response?.data?.message || e.response?.data?.error || e.message
-        showToast('error', 'Error', `Failed to load refund tickets: ${errorMsg}`)
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to load refund tickets: ${errorMsg}`,
+            life: 3000,
+        })
     } finally {
         pageLoading.value = false
     }
@@ -118,7 +126,12 @@ const goToPage = async (url) => {
         stats.value = data.stats
         lastUpdated.value = new Date()
     } catch {
-        showToast('error', 'Error', 'Failed to load page.')
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load page.',
+            life: 3000,
+        })
     } finally {
         liveLoading.value = false
     }
@@ -130,13 +143,23 @@ const closeModal = () => { showModal.value = false; selectedTicket.value = null 
 
 const handleRefundSuccess = (message) => {
     closeModal()
-    showToast('success', 'Refund Processed', message || 'Refund completed successfully.')
+    toast.add({
+        severity: 'success',
+        summary: 'Refund Processed',
+        detail: message || 'Refund completed successfully.',
+        life: 3000,
+    })
     pollLive()
 }
 
 const handleRefundConflict = () => {
     closeModal()
-    showToast('warning', 'Already Processed', 'This ticket was already processed by another user.')
+    toast.add({
+        severity: 'warning',
+        summary: 'Already Processed',
+        detail: 'This ticket was already processed by another user.',
+        life: 3000,
+    })
     pollLive()
 }
 
@@ -164,24 +187,6 @@ const statusClass = (status) => {
     return 'bg-gray-100 text-gray-700 border border-gray-200'
 }
 
-// ── Toasts ────────────────────────────────────────────────────────────────
-const showToast = (type, summary, detail, ms = 5000) => {
-    const id = ++toastCount
-    toasts.value.push({ id, type, summary, detail, visible: true })
-    setTimeout(() => removeToast(id), ms)
-}
-
-const removeToast = (id) => {
-    const i = toasts.value.findIndex(t => t.id === id)
-    if (i !== -1) { toasts.value[i].visible = false; setTimeout(() => toasts.value.splice(i, 1), 300) }
-}
-
-const toastColorClass = (t) => ({
-    success: 'bg-green-50 border-green-500 text-green-800',
-    error: 'bg-red-50 border-red-500 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-500 text-yellow-800',
-    info: 'bg-blue-50 border-blue-500 text-blue-800',
-}[t] || 'bg-gray-50 border-gray-400 text-gray-800')
 </script>
 
 <template>
@@ -297,8 +302,6 @@ const toastColorClass = (t) => ({
                 <p class="text-2xl font-bold text-red-500 mt-1">{{ stats?.total_cancelled ?? 0 }}</p>
             </div>
         </div>
-
-
 
         <!-- ── Table ──────────────────────────────────────────────────────── -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -455,26 +458,6 @@ const toastColorClass = (t) => ({
         <!-- ── Refund Modal ────────────────────────────────────────────────── -->
         <CompanyRefundModal :show="showModal" :ticket="selectedTicket" :company-config="companyConfig"
             @close="closeModal" @success="handleRefundSuccess" @conflict="handleRefundConflict" />
-
-        <!-- ── Toasts ──────────────────────────────────────────────────────── -->
-        <div class="fixed top-4 right-4 z-[100] space-y-2 w-72">
-            <template v-for="toast in toasts" :key="toast.id">
-                <Transition enter-active-class="transition duration-300 ease-out"
-                    enter-from-class="translate-x-full opacity-0" enter-to-class="translate-x-0 opacity-100"
-                    leave-active-class="transition duration-200 ease-in" leave-from-class="translate-x-0 opacity-100"
-                    leave-to-class="translate-x-full opacity-0">
-                    <div v-if="toast.visible"
-                        :class="['flex items-start gap-3 p-4 rounded-xl shadow-lg border-l-4', toastColorClass(toast.type)]">
-                        <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-sm">{{ toast.summary }}</p>
-                            <p class="text-xs mt-0.5 opacity-80">{{ toast.detail }}</p>
-                        </div>
-                        <button @click="removeToast(toast.id)"
-                            class="opacity-40 hover:opacity-70 text-lg leading-none">&times;</button>
-                    </div>
-                </Transition>
-            </template>
-        </div>
 
     </CompanyLayout>
 </template>
