@@ -46,6 +46,7 @@ const clearFilters = () => {
     filterOpen.value = false;
 };
 
+// ── Export tickets ──────────────────────────────────────────────────────────
 const isExporting = ref(false);
 const exportTickets = async () => {
     isExporting.value = true
@@ -591,7 +592,7 @@ const downloadTicket = async (pnr, customerId) => {
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Contact</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Contact_No
-                                            }}</dd>
+                                                }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Emergency Contact</dt>
@@ -645,13 +646,13 @@ const downloadTicket = async (pnr, customerId) => {
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Travel Time</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Travel_Time
-                                            }}</dd>
+                                                }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Seat Number</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{
                                                 formatSeats(selectedTicket.Seat_No)
-                                            }}</dd>
+                                                }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Company</dt>
@@ -724,7 +725,7 @@ const downloadTicket = async (pnr, customerId) => {
                                             <dt class="text-sm text-gray-500">Issued By</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Issued_By ||
                                                 'N/A'
-                                            }}</dd>
+                                                }}</dd>
                                         </div>
                                         <div class="flex justify-between items-center">
                                             <dt class="text-sm text-gray-500">SMS Sent</dt>
@@ -747,7 +748,7 @@ const downloadTicket = async (pnr, customerId) => {
                                         <div class="flex justify-between">
                                             <dt class="text-sm text-gray-500">Loyalty Points</dt>
                                             <dd class="text-sm font-medium text-gray-900">{{ selectedTicket.Points || 0
-                                            }}</dd>
+                                                }}</dd>
                                         </div>
                                     </dl>
                                 </div>
